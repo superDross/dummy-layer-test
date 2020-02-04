@@ -3,7 +3,7 @@ import setuptools
 setuptools.setup(
     name="dummy-layer-test",
     # should correlate with git tag
-    version="0.2",
+    version="0.4",
     author="superDross",
     author_email="dross78375@gmail.com",
     description="Lambda layer dependancy testing",
