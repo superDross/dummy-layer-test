@@ -5,23 +5,27 @@ Updates the version number and prepares package for uploading to PyPi.
 import argparse
 import subprocess
 import sys
-from typing import Optional
+from typing import List, Optional
 
 
-def get_current_git_version_number() -> float:
+def execute_subprocess(cmd: List[str]):
     try:
-        current_git_version_process = subprocess.run(
-            ["git", "describe", "--tags", "--abbrev=0"],
-            check=True,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
+        process = subprocess.run(
+            cmd, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
         )
-        return float(current_git_version_process.stdout.decode("utf-8").rstrip())
+        return process
     except subprocess.CalledProcessError as e:
         raise ValueError(
             f"The command {e.cmd} raised the following error: "
             f"{e.stderr.decode('utf-8')}"
         )
+
+
+def get_current_git_version_number() -> float:
+    current_git_version_process = execute_subprocess(
+        ["git", "describe", "--tags", "--abbrev=0"],
+    )
+    return float(current_git_version_process.stdout.decode("utf-8").rstrip())
 
 
 def get_current_version_number() -> float:
@@ -71,36 +75,25 @@ def update_version_number(version_number: str) -> None:
     with open("VERSION", "w") as new_version_file:
         new_version_file.write(version_number)
     msg = get_tag_message_from_user()
-    try:
-        subprocess.run(
-            ["git", "tag", version_number, "-m", msg],
-            check=True,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-        )
-    except subprocess.CalledProcessError as e:
-        raise ValueError(
-            f"The command {e.cmd} raised the following error: "
-            f"{e.stderr.decode('utf-8')}"
-        )
+    execute_subprocess(["git", "tag", version_number, "-m", msg])
 
 
+def push_tags() -> None:
+    commands = [
+        ["git", "add", "VERSION"],
+        ["git", "commit", "-m", "Updated version number"],
+        ["git", "push", "origin", "master"],
+        ["git", "push", "--tags"],
+    ]
+    for command in commands:
+        cmd_process = execute_subprocess(command)
+        print(cmd_process.stdout.decode("utf-8"))
+        print(cmd_process.stderr.decode("utf-8"))
 
 
 def prepare_package() -> None:
-    try:
-        setup_process = subprocess.run(
-            ["python", "setup.py", "sdist"],
-            check=True,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-        )
-        print(setup_process.stdout.decode("utf-8"))
-    except subprocess.CalledProcessError as e:
-        raise ValueError(
-            f"The command {e.cmd} raised the following error: "
-            f"{e.stderr.decode('utf-8')}"
-        )
+    setup_process = execute_subprocess(["python", "setup.py", "sdist"])
+    print(setup_process.stdout.decode("utf-8"))
 
 
 def get_parser() -> argparse.ArgumentParser:
@@ -119,6 +112,7 @@ def main() -> None:
     )
     update_version_number(new_version_number)
     prepare_package()
+    push_tags()
     print("Upload to PyPi with the following command:\ntwine upload dist/*")
 
 
