@@ -1,9 +1,12 @@
 import setuptools
 
+with open("VERSION", "r") as version_file:
+    version = version_file.read().strip()
+
 setuptools.setup(
     name="dummy-layer-test",
     # should correlate with git tag
-    version="0.5",
+    version=version,
     author="superDross",
     author_email="dross78375@gmail.com",
     description="Lambda layer dependancy testing",
